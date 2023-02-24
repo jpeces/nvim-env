@@ -6,11 +6,13 @@
 
 # Required packages to install
 apk add --no-cache --update-cache \
-    git \
+    alpine-sdk \
+    openssh \
+    xclip \
     ripgrep \
     neovim \
-    alpine-sdk \
-    openssh
+    neovim-doc \
+    git
 
 # Custom package example
 apk add --no-cache --update-cache lazygit
