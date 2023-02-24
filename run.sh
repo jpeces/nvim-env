@@ -98,7 +98,7 @@ function main() {
     # Check if the image already exist. If not, creates it
     image_id=$(docker images --format "{{if eq .Repository \"${g_image_name}\"}}{{.ID}}{{end}}")
     if [ -z "${image_id}" ]; then
-        docker build -t "${g_image_name}" --build-arg ssh_pub_key="$(cat ~/.ssh/id_rsa.pub)" .
+        docker build -t "${g_image_name}" --build-arg ssh_pub_key="$(cat ~/.ssh/id_rsa.pub)" docker/
     fi
 
     # Check if there is a container running with the same name and get its ID
