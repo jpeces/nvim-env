@@ -1,27 +1,100 @@
-CONFIG_DIR=/home/jpeces/temp/nvim
-IMAGE_NAME=nvim-env
-CONTAINER_NAME=nvim-env
-SSH_PORT=5000
+#!/bin/bash
 
-if [[ $# == 0 ]]; then
-    echo "[INFO] Using default configuration"
-elif [ "$1" ] && [ "$2" ]; then
-    CONTAINER_NAME = $1
-    IMAGE_NAME = $1
-    CONFIG_DIR = $2
-fi
+## -- Global variables declaration -- ##
+g_program_name=$(basename "$0")
+g_config_dir="${HOME}/.config/nvim"
+g_container_name="nvim-env"
+g_image_name="nvim-env"
+g_ssh_port=5000
 
-IMAGE_ID=`docker images --format "{{if eq .Repository \"${IMAGE_NAME}\"}}{{.ID}}{{end}}"`
-if [ -z ${IMAGE_ID} ]; then
-    docker build -t ${IMAGE_NAME} --build-arg ssh_pub_key="$(cat ~/.ssh/id_rsa.pub)" .
-fi
+# Print message
+function log() {
+    printf '%s\n' "$1" >&2
+}
 
+# Print help information
+function show_help() {
+cat <<-EOF
+Usage:  ${g_program_name} [OPTIONS] IMAGE
 
-CONTAINER_ID=`docker inspect --format="{{if eq (slice .Name 1) \"${IMAGE_NAME}\"}}{{slice .ID 0 12}}{{end}}" $(docker ps -q)`
-if [ ${CONTAINER_ID} ]; then
-    echo "[INFO] Container ${CONTAINER_NAME} already running with id: ${CONTAINER_ID:1}"
-    exit 0
-fi
+Options:
+      --name            Assign a name to the container (default: nvim-env)
+  -i, --image string    Name of the target docker image (default: nvim-env)
+  -p, --port uint16     Host port where the container's ssh service will be published (default: 5000)
+  -d, --config          Host directory to mount as config (default: ${HOME}/.config/nvim)
+  -h  --help            Show this help
+EOF
+}
 
-CONTAINER_ID=`docker run --name ${CONTAINER_NAME} --rm  -d -p ${SSH_PORT}:22 -v ${CONFIG_DIR}:/root/.config/nvim ${IMAGE_NAME}`
-echo "[INFO] Container ${CONTAINER_NAME} running with id: ${CONTAINER_ID:1:11}"
+# Arguments parsing function
+function get_args() {
+    local valid_args
+    if ! valid_args=$(getopt -n "${g_program_name}" \
+                    -o i:p:d:h --long name:,image:,port:,config:,help \
+                    -- "$@"); then
+        exit 1;
+    fi
+
+    eval set -- "${valid_args}"
+    while true; do
+        case $1 in
+            -h | --help)
+                show_help
+                exit
+                ;;
+            --name)
+                g_container_name=$2
+                shift 2
+                ;;
+            -i | --image)
+                g_image_name=$2
+                shift 2
+                ;;
+            -p | --port)
+                g_ssh_port=$2
+                shift 2
+                ;;
+            -d | --config)
+                g_config_dir=$2
+                shift 2
+                ;;
+            --) # End of all options.
+                shift; break
+                ;;
+            *) # Default case: No more options, so break out of the loop.
+                break
+        esac
+    done
+}
+
+function main () {
+    get_args "$@"
+    # check_args
+
+    local image_id=""
+    local running=""
+    local container_id=""
+
+    ## -- Script logic -- ##
+    image_id=$(docker images --format "{{if eq .Repository \"${g_image_name}\"}}{{.ID}}{{end}}")
+    if [ -z ${image_id} ]; then
+        docker build -t ${g_image_name} --build-arg ssh_pub_key="$(cat ~/.ssh/id_rsa.pub)" .
+    fi
+
+    running=$(docker ps -q)
+    if [[ ${running} ]]; then
+        container_id=$(docker inspect --format="{{if eq (slice .Name 1) \"${g_container_name}\"}}{{slice .ID 0 12}}{{end}}" $running)
+    fi
+
+    if [ ${container_id} ]; then
+        log "[info] Container ${g_container_name} already running with id: ${container_id}"
+        exit 0
+    fi
+
+    container_id=$(docker run --name ${g_container_name} --rm  -d -p ${g_ssh_port}:22 -v ${g_config_dir}:/root/.config/nvim ${g_image_name})
+    log "[info] Container ${g_container_name} running with id: ${container_id::12}"
+
+}
+
+## -- Script execution --##
+main "$@" # "$@" transfer script global scope (with all the arguments from user-land)
