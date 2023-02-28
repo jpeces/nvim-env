@@ -16,8 +16,6 @@ RUN apk add --no-cache --update-cache \
 
 # Custom package
 RUN apk add --no-cache --update-cache lazygit
-RUN echo kk
-RUN echo kk
 
 WORKDIR /home/$USERNAME/.config/nvim
 CMD ["/bin/sh"]
