@@ -117,7 +117,7 @@ function main() {
     # Check if the image already exist. If not, creates it and remove all
     # posible dangling images created.
     image_id=$(docker images -q "${g_image_name}")
-    if ! [[ "${image_id}" ]] || [[ "${g_force_build}" ]]; then
+    if ! [[ "${image_id}" ]] || (( "${g_force_build}" )); then
         docker build -t "${g_image_name}" --build-arg USERNAME="${g_username}" .
         docker rmi "$(docker images -f "dangling=true" -q)" > /dev/null 2>&1
     fi
