@@ -6,6 +6,7 @@ g_config_dir="${HOME}/.config/nvim"
 g_container_name="nvim-env"
 g_image_name="nvim-env"
 g_username="nvim"
+g_force_run=0
 g_force_build=0
 
 # Print message
@@ -30,6 +31,7 @@ Options:
   -u, --user    string      User name used to build and access to the container (default: nvim)
   -d, --config  string      Host directory to mount as config (default: ${HOME}/.config/nvim)
   -b, --build               Force Docker image build stage (default: false)
+  -f, --force-run           Force env container run
   -h  --help                Show this help
 EOF
 }
@@ -38,7 +40,7 @@ EOF
 function get_args() {
     local valid_args
     if ! valid_args=$(getopt -n "${g_program_name}" \
-                    -o i:u:d:bh --long name:,image:,user:,config:,build,help \
+                    -o i:u:d:bfh --long name:,image:,user:,config:,build,force-run,help \
                     -- "$@"); then
         exit 1;
     fi
@@ -65,6 +67,10 @@ function get_args() {
             -d | --config)
                 g_config_dir=$2
                 shift 2
+                ;;
+            -f | --force-run)
+                g_force_run=1
+                shift
                 ;;
             -b | --build)
                 g_force_build=1
@@ -107,9 +113,9 @@ function main() {
 
         if [[ "${container_id}" ]]; then
             log "[info] Container ${g_container_name} already running with id: ${container_id}"
-            ! (( "${g_force_build}" )) && exit 0
+            (( ! "${g_force_build}" && ! "${g_force_run}")) && exit 0
 
-            log "[info] Force build set. Stoping container id ${container_id}..."
+            log "[info] Stoping container id ${container_id}..."
             docker stop "${container_id}" > /dev/null 2>&1
         fi
     fi

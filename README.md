@@ -10,5 +10,6 @@ Options:
   -u, --user    string      User name used to build and access to the container (default: nvim)
   -d, --config  string      Host directory to mount as config (default: ${HOME}/.config/nvim)
   -b, --build               Force Docker image build stage (default: false)
+  -f, --force-run           Force env container run
   -h  --help                Show this help
 ```
